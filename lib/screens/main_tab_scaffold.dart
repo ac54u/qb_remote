@@ -1,10 +1,10 @@
-import 'dart:async'; // 引入 Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // 引入通知包
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../main.dart'; // 引入 main.dart 以使用全局 notification 插件
-import '../services/api_service.dart'; // 引入 API 服务
+import '../services/api_service.dart';
 import '../core/constants.dart';
 
 // 引入四个主页面
@@ -22,24 +22,22 @@ class MainTabScaffold extends StatefulWidget {
 
 class _MainTabScaffoldState extends State<MainTabScaffold> {
   Timer? _notificationTimer;
-  // 记录每个任务的上一次状态 {hash: state}，用于判断状态变化
+  // 记录每个任务的上一次状态 {hash: state}
   final Map<String, String> _lastStates = {};
 
   @override
   void initState() {
     super.initState();
-    // 启动通知轮询服务
     _startNotificationService();
   }
 
   @override
   void dispose() {
-    // 销毁页面时停止计时器，防止内存泄漏
     _notificationTimer?.cancel();
     super.dispose();
   }
 
-  // 🔔 核心逻辑：轮询检查下载状态
+  // 🔔 核心逻辑：轮询检查下载状态 (支持 完成 + 报错)
   void _startNotificationService() {
     // 每 5 秒检查一次
     _notificationTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
@@ -50,46 +48,52 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
       for (var t in torrents) {
         final hash = t['hash'];
         final name = t['name'];
-        final state = t['state']; // 例如: downloading, up, completed, pausedDL
+        final state = t['state']; 
         
-        // 2. 获取旧状态 (如果没有旧状态，说明是刚打开 App，跳过通知)
+        // 2. 获取旧状态
         final oldState = _lastStates[hash];
 
-        // 3. 判断是否刚刚完成
-        // 逻辑：如果旧状态是“下载中(downloading/forcedDL)”，且新状态变成了“做种(up/uploading)”或“完成”
+        // --- 情况一：刚刚下载完成 ---
+        // 旧状态是“下载中”，新状态是“做种”或“完成”
         if (oldState != null && 
            (oldState == 'downloading' || oldState == 'forcedDL') && 
            (state == 'up' || state == 'uploading' || state == 'pausedUP' || state == 'stalledUP' || state == 'completed')) {
           
-          _showCompletionNotification(name);
+          _showNotification("下载完成 🎉", name);
         }
 
-        // 4. 更新记录，供下一次对比
+        // --- 情况二：任务出错了 (硬盘满、读写错误、文件丢失) ---
+        // 只有当旧状态“不是错误”，而新状态“是错误”时才通知 (防止一直弹窗)
+        if (oldState != null && 
+           oldState != 'error' && oldState != 'missingFiles' &&
+           (state == 'error' || state == 'missingFiles')) {
+          
+          _showNotification("⚠️ 下载出错", "$name (请检查硬盘或文件)");
+        }
+
+        // 3. 更新记录
         _lastStates[hash] = state;
       }
     });
   }
 
-  // 🔔 发送本地通知
-  Future<void> _showCompletionNotification(String fileName) async {
-    // Android 通知详情
+  // 🔔 通用的通知发送方法 (支持自定义标题和内容)
+  Future<void> _showNotification(String title, String body) async {
     const androidDetails = AndroidNotificationDetails(
-      'download_channel', // 渠道 ID
-      '下载通知', // 渠道名称
+      'download_channel',
+      '下载通知',
       channelDescription: '通知下载完成状态',
       importance: Importance.max,
       priority: Priority.high,
     );
-    // iOS 通知详情
     const iosDetails = DarwinNotificationDetails();
     
     const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    // 调用 main.dart 里初始化的插件发送通知
     await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecond, // 使用时间戳作为唯一的 Notification ID
-      '下载完成 🎉', // 标题
-      fileName,   // 内容 (文件名)
+      DateTime.now().millisecond, // ID
+      title, 
+      body, 
       details,
     );
   }
@@ -100,8 +104,6 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    // 使用 ValueListenableBuilder 监听主题变化 (如果你的 themeNotifier 在 constants.dart 中定义)
-    // 如果没有使用 ValueListenableBuilder，直接取值也可以，但在切换主题时可能不会立即刷新 TabBar 颜色
     return ValueListenableBuilder<bool>(
       valueListenable: themeNotifier,
       builder: (context, isDark, child) {
