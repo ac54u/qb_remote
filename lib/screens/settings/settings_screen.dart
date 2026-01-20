@@ -24,8 +24,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _qbtVersion = "v?.?.?";
   String _loginTime = "未知";
   int _refreshInterval = 3;
-  String _defaultPath = "/downloads/Movies";
+  // String _defaultPath = "/downloads/Movies"; // 不再只需要字符串，改为控制器控制
   bool _cellularWarn = true;
+  
+  final _pathCtrl = TextEditingController(); // ✅ 新增：路径控制器
   final _prowlarrUrlCtrl = TextEditingController();
   final _prowlarrKeyCtrl = TextEditingController();
   final _tmdbKeyCtrl = TextEditingController();
@@ -34,6 +36,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _pathCtrl.dispose();
+    _prowlarrUrlCtrl.dispose();
+    _prowlarrKeyCtrl.dispose();
+    _tmdbKeyCtrl.dispose();
+    super.dispose();
   }
 
   void _loadData() async {
@@ -51,7 +62,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
       }
       _refreshInterval = prefs.getInt('refresh_rate') ?? 3;
-      _defaultPath = prefs.getString('default_path') ?? "/downloads/Movies";
+      
+      // ✅ 修改：加载路径到控制器
+      String path = prefs.getString('default_path') ?? "/downloads/Movies";
+      _pathCtrl.text = path;
+
       _cellularWarn = prefs.getBool('cellular_warn') ?? true;
 
       String defaultUrl = s != null ? "http://${s['host']}:9696" : "";
@@ -59,6 +74,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _prowlarrKeyCtrl.text = prefs.getString('prowlarr_key') ?? '';
       _tmdbKeyCtrl.text = prefs.getString('tmdb_key') ?? '';
     });
+  }
+
+  // ✅ 新增：保存下载路径到服务器和本地
+  Future<void> _saveDownloadPath() async {
+    FocusScope.of(context).unfocus(); // 收起键盘
+    if (_pathCtrl.text.isEmpty) {
+      Utils.showToast("路径不能为空");
+      return;
+    }
+
+    // 1. 发送给 qBittorrent 服务器
+    bool success = await ApiService.setPreferences(savePath: _pathCtrl.text);
+
+    if (success) {
+      // 2. 如果服务器更新成功，保存到本地缓存
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('default_path', _pathCtrl.text);
+      Utils.showToast("✅ 默认路径已更新");
+    } else {
+      Utils.showToast("❌ 更新失败，请检查服务器连接或权限");
+    }
   }
 
   void _saveExt() async {
@@ -288,7 +324,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                const SizedBox(height: 10),
+                
+                // ✅ 新增：独立的下载设置区块 (允许编辑)
+                const Padding(
+                  padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "下载设置",
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ),
+                ),
+                CupertinoListSection.insetGrouped(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "默认保存路径",
+                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CupertinoTextField(
+                                  controller: _pathCtrl,
+                                  placeholder: "/downloads",
+                                  style: TextStyle(
+                                      color:
+                                          isDark ? Colors.white : Colors.black),
+                                  clearButtonMode:
+                                      OverlayVisibilityMode.editing,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              CupertinoButton(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 0),
+                                color: CupertinoColors.activeBlue,
+                                minSize: 32,
+                                onPressed: _saveDownloadPath,
+                                child: const Text(
+                                  "保存",
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "提示: 请务必填写服务器(或Docker容器)内部的真实路径",
+                            style: TextStyle(fontSize: 11, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
                 const Padding(
                   padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
                   child: Align(
@@ -322,25 +422,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ),
-                    CupertinoListTile(
-                      title: Text(
-                        "默认下载路径",
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      trailing: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 150),
-                        child: Text(
-                          _defaultPath,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // ❌ 已删除：旧的只读路径显示
                     CupertinoListTile(
                       title: Text(
                         "搜刮器配置",

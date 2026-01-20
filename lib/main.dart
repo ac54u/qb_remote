@@ -5,19 +5,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+// ✅ 新增：引入通知包
+import 'package:flutter_localizations/flutter_localizations.dart'; 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-// 引入我们刚才拆分的文件
 import 'core/constants.dart';
 import 'services/server_manager.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/main_tab_scaffold.dart';
 
+// ✅ 新增：全局通知插件实例 (方便在其他文件直接调用)
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+  
   final prefs = await SharedPreferences.getInstance();
   themeNotifier.value = prefs.getBool('is_dark_mode') ?? false;
   final hasServers = await ServerManager.hasServers();
+
+  // ✅ 新增：初始化本地通知
+  await _initNotifications();
 
   await SentryFlutter.init(
     (options) {
@@ -26,6 +36,31 @@ Future<void> main() async {
       options.debug = false;
     },
     appRunner: () => runApp(MyApp(startOnboarding: !hasServers)),
+  );
+}
+
+// ✅ 新增：通知初始化逻辑分离
+Future<void> _initNotifications() async {
+  // Android 设置：使用默认的应用图标 (通常是 @mipmap/ic_launcher)
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  // iOS 设置：启动时直接请求权限 (角标、声音、弹窗)
+  const DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    // 如果需要处理点击通知后的跳转，可以在这里加 onDidReceiveNotificationResponse
   );
 }
 

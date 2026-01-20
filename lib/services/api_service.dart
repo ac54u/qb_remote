@@ -123,6 +123,23 @@ class ApiService {
     }
   }
 
+  // ✅ 新增：获取种子包含的文件列表 (用于详情页展示)
+  static Future<List<dynamic>> getTorrentContent(String hash) async {
+    _ensureInit();
+    try {
+      final u = await _url();
+      final opts = await _getOptions();
+      final response = await _dio.get(
+        '$u/api/v2/torrents/files',
+        queryParameters: {'hash': hash},
+        options: opts,
+      );
+      return response.data as List<dynamic>;
+    } catch (e) {
+      return [];
+    }
+  }
+
   static Future<String?> controlTorrent(String hash, String command) async {
     _ensureInit();
     if (!Utils.isValidHash(hash)) return "无效的 Hash";
@@ -216,6 +233,30 @@ class ApiService {
       await _dio.post('$u/api/v2/torrents/add', data: formData, options: opts);
       return true;
     } catch (e) {
+      return false;
+    }
+  }
+
+  // ✅ 新增：修改服务器偏好设置 (如下载路径)
+  static Future<bool> setPreferences({required String savePath}) async {
+    _ensureInit();
+    try {
+      final u = await _url();
+      final opts = await _getOptions();
+      // qBittorrent 的 API 需要把参数打包成 json 字符串放在 'json' 字段里
+      final data = {
+        'json': jsonEncode({'save_path': savePath})
+      };
+      
+      final response = await _dio.post(
+        '$u/api/v2/app/setPreferences',
+        data: FormData.fromMap(data),
+        options: opts.copyWith(contentType: Headers.formUrlEncodedContentType),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Set preferences error: $e');
       return false;
     }
   }
