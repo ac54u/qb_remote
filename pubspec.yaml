@@ -1,0 +1,42 @@
+name: flutter_application_1
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ✅ 核心修复：升级 intl 版本以匹配你的 Flutter SDK
+  intl: ^0.20.2
+  
+  # 本地化支持
+  flutter_localizations:
+    sdk: flutter
+    
+  # UI 图标
+  cupertino_icons: ^1.0.2
+  
+  # 网络与存储
+  dio: ^5.3.0
+  shared_preferences: ^2.2.0
+  
+  # 功能组件
+  fluttertoast: ^8.2.2
+  google_fonts: ^6.1.0
+  fl_chart: ^0.63.0
+  flutter_slidable: ^3.0.0
+  cached_network_image: ^3.2.3
+  file_picker: ^5.3.0
+  sentry_flutter: ^7.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
