@@ -11,6 +11,7 @@ import '../../services/api_service.dart';
 import '../server/server_list_screen.dart';
 import 'log_viewer_screen.dart';
 import 'feedback_screen.dart';
+import 'support_screen.dart'; // ✅ 别忘了引入刚才新建的文件
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -178,9 +179,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // 🗑️ 已移除：_buildDonationCard 方法
-  // 它的逻辑已经直接移到了 build 方法的列表里
-
   @override
   Widget build(BuildContext context) {
     bool isDark = themeNotifier.value;
@@ -200,6 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 10),
+                // --- 服务器卡片 (保持不变) ---
                 if (_currentServer != null)
                   GestureDetector(
                     onTap: () => Navigator.push(
@@ -273,6 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 
+                // --- 下载设置 ---
                 const Padding(
                   padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
                   child: Align(
@@ -336,6 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
 
+                // --- 通用设置 ---
                 const Padding(
                   padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
                   child: Align(
@@ -415,56 +416,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                        },
                      ),
                      
-                     // ✅ 新增：把“支持作者”直接合并到这里
-                     Padding(
-                       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                       child: Column(
-                         children: [
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.center,
-                             children: [
-                               const Icon(CupertinoIcons.heart_fill, color: Colors.red),
-                               const SizedBox(width: 8),
-                               Text(
-                                 "支持作者",
-                                 style: TextStyle(
-                                   fontSize: 18, 
-                                   fontWeight: FontWeight.bold,
-                                   color: isDark ? Colors.white : Colors.black,
-                                 ),
-                               ),
-                             ],
-                           ),
-                           const SizedBox(height: 8),
-                           const Text(
-                             "如果觉得好用，可以请我喝杯咖啡 ~",
-                             style: TextStyle(color: Colors.grey, fontSize: 14),
-                           ),
-                           const SizedBox(height: 16),
-                           ClipRRect(
-                             borderRadius: BorderRadius.circular(12),
-                             child: CachedNetworkImage(
-                               imageUrl: "https://i.postimg.cc/qkZ0Dy30/IMG-8639.jpg?dl=1",
-                               fit: BoxFit.fitWidth, 
-                               width: double.infinity,
-                               placeholder: (context, url) => const SizedBox(
-                                 height: 200, 
-                                 child: Center(child: CupertinoActivityIndicator())
-                               ),
-                               errorWidget: (context, url, error) => Container(
-                                 height: 200,
-                                 color: Colors.grey[200],
-                                 child: const Icon(Icons.broken_image, color: Colors.grey),
-                               ),
-                             ),
-                           ),
-                         ],
-                       ),
+                     // ✅ 完美的独立栏目：支持作者
+                     CupertinoListTile(
+                      title: Text("支持作者", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                      subtitle: const Text("请我喝杯咖啡"),
+                      leading: const Icon(CupertinoIcons.heart_fill, color: Colors.red),
+                      trailing: const CupertinoListTileChevron(),
+                      onTap: () {
+                        // 跳转到新的打赏页面
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => const SupportScreen(),
+                          ),
+                        );
+                       },
                      ),
                   ],
                 ),
                 
-                // ⚠️ 删除了原来的 Donation Card，现在已经在 List Section 里了
                 const SizedBox(height: 40),
               ],
             ),
