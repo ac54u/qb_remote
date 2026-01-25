@@ -24,10 +24,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _qbtVersion = "v?.?.?";
   String _loginTime = "未知";
   int _refreshInterval = 3;
-  // String _defaultPath = "/downloads/Movies"; // 不再只需要字符串，改为控制器控制
   bool _cellularWarn = true;
   
-  final _pathCtrl = TextEditingController(); // ✅ 新增：路径控制器
+  final _pathCtrl = TextEditingController(); 
   final _prowlarrUrlCtrl = TextEditingController();
   final _prowlarrKeyCtrl = TextEditingController();
   final _tmdbKeyCtrl = TextEditingController();
@@ -63,7 +62,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       _refreshInterval = prefs.getInt('refresh_rate') ?? 3;
       
-      // ✅ 修改：加载路径到控制器
       String path = prefs.getString('default_path') ?? "/downloads/Movies";
       _pathCtrl.text = path;
 
@@ -76,19 +74,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  // ✅ 新增：保存下载路径到服务器和本地
   Future<void> _saveDownloadPath() async {
-    FocusScope.of(context).unfocus(); // 收起键盘
+    FocusScope.of(context).unfocus(); 
     if (_pathCtrl.text.isEmpty) {
       Utils.showToast("路径不能为空");
       return;
     }
 
-    // 1. 发送给 qBittorrent 服务器
     bool success = await ApiService.setPreferences(savePath: _pathCtrl.text);
 
     if (success) {
-      // 2. 如果服务器更新成功，保存到本地缓存
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('default_path', _pathCtrl.text);
       Utils.showToast("✅ 默认路径已更新");
@@ -183,55 +178,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDonationCard() {
-    bool isDark = themeNotifier.value;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? kCardColorDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: kMinimalShadow,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(CupertinoIcons.heart_fill, color: Colors.red),
-              const SizedBox(width: 10),
-              const Text(
-                "支持作者",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "如果觉得好用，可以请我喝杯咖啡 ~",
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(
-              imageUrl: "https://i.postimg.cc/qkZ0Dy30/IMG-8639.jpg?dl=1",
-              fit: BoxFit.fitWidth, 
-              width: double.infinity,
-              placeholder: (context, url) => const SizedBox(
-                height: 200, 
-                child: Center(child: CupertinoActivityIndicator())
-              ),
-              errorWidget: (context, url, error) => Container(
-                height: 200,
-                color: Colors.grey[200],
-                child: const Icon(Icons.broken_image, color: Colors.grey),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // 🗑️ 已移除：_buildDonationCard 方法
+  // 它的逻辑已经直接移到了 build 方法的列表里
 
   @override
   Widget build(BuildContext context) {
@@ -325,7 +273,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 
-                // ✅ 新增：独立的下载设置区块 (允许编辑)
                 const Padding(
                   padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
                   child: Align(
@@ -422,7 +369,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ),
-                    // ❌ 已删除：旧的只读路径显示
                     CupertinoListTile(
                       title: Text(
                         "搜刮器配置",
@@ -468,9 +414,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                        },
                      ),
+                     
+                     // ✅ 新增：把“支持作者”直接合并到这里
+                     Padding(
+                       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                       child: Column(
+                         children: [
+                           Row(
+                             mainAxisAlignment: MainAxisAlignment.center,
+                             children: [
+                               const Icon(CupertinoIcons.heart_fill, color: Colors.red),
+                               const SizedBox(width: 8),
+                               Text(
+                                 "支持作者",
+                                 style: TextStyle(
+                                   fontSize: 18, 
+                                   fontWeight: FontWeight.bold,
+                                   color: isDark ? Colors.white : Colors.black,
+                                 ),
+                               ),
+                             ],
+                           ),
+                           const SizedBox(height: 8),
+                           const Text(
+                             "如果觉得好用，可以请我喝杯咖啡 ~",
+                             style: TextStyle(color: Colors.grey, fontSize: 14),
+                           ),
+                           const SizedBox(height: 16),
+                           ClipRRect(
+                             borderRadius: BorderRadius.circular(12),
+                             child: CachedNetworkImage(
+                               imageUrl: "https://i.postimg.cc/qkZ0Dy30/IMG-8639.jpg?dl=1",
+                               fit: BoxFit.fitWidth, 
+                               width: double.infinity,
+                               placeholder: (context, url) => const SizedBox(
+                                 height: 200, 
+                                 child: Center(child: CupertinoActivityIndicator())
+                               ),
+                               errorWidget: (context, url, error) => Container(
+                                 height: 200,
+                                 color: Colors.grey[200],
+                                 child: const Icon(Icons.broken_image, color: Colors.grey),
+                               ),
+                             ),
+                           ),
+                         ],
+                       ),
+                     ),
                   ],
                 ),
-                _buildDonationCard(),
+                
+                // ⚠️ 删除了原来的 Donation Card，现在已经在 List Section 里了
                 const SizedBox(height: 40),
               ],
             ),
