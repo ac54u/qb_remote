@@ -1,3 +1,5 @@
+import 'user_agreement_screen.dart'; // ✅ TrackLuxe 用户协议
+import 'privacy_policy_screen.dart';//  ✅ 隐私政策
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -416,6 +418,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                        },
                      ),
                      
+                    // ... 隐私政策 ...
+                    CupertinoListTile(
+                      title: Text("隐私政策", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                      subtitle: const Text("我们如何处理数据"),
+                      leading: const Icon(CupertinoIcons.lock_shield_fill, color: Colors.blue),
+                      trailing: const CupertinoListTileChevron(),
+                      onTap: () {
+                        Navigator.push(context, CupertinoPageRoute(builder: (_) => const PrivacyPolicyScreen()));
+                      },
+                    ),
+
+                    // ✅ 新增：用户协议
+                    CupertinoListTile(
+                      title: Text("用户协议", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                      subtitle: const Text("免责声明与使用规范"),
+                      leading: const Icon(CupertinoIcons.doc_text_fill, color: Colors.orange), // 用个文档图标
+                      trailing: const CupertinoListTileChevron(),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => const UserAgreementScreen(),
+                          ),
+                        );
+                      },
+                    ),
+
                      // ✅ 完美的独立栏目：支持作者
                      CupertinoListTile(
                       title: Text("支持作者", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
