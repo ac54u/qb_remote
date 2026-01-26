@@ -26,13 +26,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader("TrackLuxe 隐私政策", textColor),
+                _buildHeader("Orbix 隐私政策", textColor),
                 Text("生效日期：2026年1月25日", style: TextStyle(color: subTextColor, fontSize: 13)),
                 const SizedBox(height: 24),
 
                 _buildSectionTitle("1. 引言", textColor),
                 _buildParagraph(
-                  "TrackLuxe（以下简称“本应用”）是一款配合 qBittorrent 使用的第三方管理工具。我们非常重视您的隐私。本应用的核心承诺是：我们不会将您的个人服务器信息、下载记录或文件内容上传至任何第三方服务器。您的数据完全由您掌控。",
+                  "Orbix（以下简称“本应用”）是一款配合 qBittorrent 使用的第三方管理工具。我们非常重视您的隐私。本应用的核心承诺是：我们不会将您的个人服务器信息、下载记录或文件内容上传至任何第三方服务器。您的数据完全由您掌控。",
                   textColor,
                 ),
 

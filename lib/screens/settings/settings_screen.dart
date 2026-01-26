@@ -1,4 +1,4 @@
-import 'user_agreement_screen.dart'; // ✅ TrackLuxe 用户协议
+import 'user_agreement_screen.dart'; // ✅ Orbix 用户协议
 import 'privacy_policy_screen.dart';//  ✅ 隐私政策
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';

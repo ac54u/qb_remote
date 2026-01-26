@@ -107,7 +107,7 @@ class SupportScreen extends StatelessWidget {
               const SizedBox(height: 40),
               // 底部标语
               Text(
-                "TrackLuxe v1.0.0",
+                "Orbix v1.0.0",
                 style: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: 12),
               ),
             ],

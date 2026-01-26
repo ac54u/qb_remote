@@ -33,7 +33,7 @@ class OnboardingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                "TrackLuxe",
+                "Orbix",
                 style: GoogleFonts.outfit(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,

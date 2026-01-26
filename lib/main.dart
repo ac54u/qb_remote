@@ -74,7 +74,7 @@ class MyApp extends StatelessWidget {
       valueListenable: themeNotifier,
       builder: (context, isDark, child) {
         return CupertinoApp(
-          title: 'TrackLuxe',
+          title: 'Orbix',
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
              GlobalMaterialLocalizations.delegate,
