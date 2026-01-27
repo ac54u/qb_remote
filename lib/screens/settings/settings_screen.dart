@@ -1,5 +1,5 @@
-import 'user_agreement_screen.dart'; // ✅ Orbix 用户协议
-import 'privacy_policy_screen.dart';//  ✅ 隐私政策
+import 'user_agreement_screen.dart'; // ✅ 完整保留
+import 'privacy_policy_screen.dart'; // ✅ 完整保留
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,7 +13,7 @@ import '../../services/api_service.dart';
 import '../server/server_list_screen.dart';
 import 'log_viewer_screen.dart';
 import 'feedback_screen.dart';
-import 'support_screen.dart'; // ✅ 别忘了引入刚才新建的文件
+import 'support_screen.dart'; 
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -60,14 +60,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (v != null) _qbtVersion = v;
       if (t != null) {
         final dt = DateTime.parse(t);
-        _loginTime =
-            "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+        _loginTime = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
       }
       _refreshInterval = prefs.getInt('refresh_rate') ?? 3;
-      
       String path = prefs.getString('default_path') ?? "/data/Movies";
       _pathCtrl.text = path;
-
       _cellularWarn = prefs.getBool('cellular_warn') ?? true;
 
       String defaultUrl = s != null ? "http://${s['host']}:9696" : "";
@@ -83,9 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Utils.showToast("路径不能为空");
       return;
     }
-
     bool success = await ApiService.setPreferences(savePath: _pathCtrl.text);
-
     if (success) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('default_path', _pathCtrl.text);
@@ -119,6 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showExtSettings() {
+    bool isDark = themeNotifier.value;
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => Padding(
@@ -127,43 +123,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
           height: 500,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: themeNotifier.value ? kBgColorDark : kBgColorLight,
+            color: isDark ? kCardColorDark : kBgColorLight,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "扩展服务配置",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 20,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   "Prowlarr 地址",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12),
                 ),
                 CupertinoTextField(
                   controller: _prowlarrUrlCtrl,
                   placeholder: "http://192.168.1.x:9696",
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   "Prowlarr API Key",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12),
                 ),
                 CupertinoTextField(
                   controller: _prowlarrKeyCtrl,
                   placeholder: "在 Prowlarr 设置 -> 通用中获取",
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   "TMDB API Key (选填)",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12),
                 ),
                 CupertinoTextField(
                   controller: _tmdbKeyCtrl,
                   placeholder: "留空则使用公共 Key",
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -200,7 +203,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 10),
-                // --- 服务器卡片 (保持不变) ---
                 if (_currentServer != null)
                   GestureDetector(
                     onTap: () => Navigator.push(
@@ -215,14 +217,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       decoration: BoxDecoration(
                         color: isDark ? kCardColorDark : Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: kMinimalShadow,
+                        boxShadow: isDark ? [] : kMinimalShadow,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             "当前服务器",
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 13),
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -244,8 +246,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 "${_currentServer!['host']}:${_currentServer!['port']}",
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white38 : Colors.grey,
                                   fontSize: 14,
                                 ),
                               ),
@@ -262,8 +264,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 "qBittorrent $_qbtVersion",
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white38 : Colors.grey,
                                   fontSize: 14,
                                 ),
                               ),
@@ -274,7 +276,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 
-                // --- 下载设置 ---
                 const Padding(
                   padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
                   child: Align(
@@ -287,16 +288,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 CupertinoListSection.insetGrouped(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+                  backgroundColor: Colors.transparent,
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             "默认保存路径",
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                            style: TextStyle(fontSize: 13, color: isDark ? Colors.white54 : Colors.grey),
                           ),
                           const SizedBox(height: 8),
                           Row(
@@ -306,10 +307,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   controller: _pathCtrl,
                                   placeholder: "/downloads",
                                   style: TextStyle(
-                                      color:
-                                          isDark ? Colors.white : Colors.black),
-                                  clearButtonMode:
-                                      OverlayVisibilityMode.editing,
+                                      color: isDark ? Colors.white : Colors.black),
+                                  clearButtonMode: OverlayVisibilityMode.editing,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -338,7 +337,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
 
-                // --- 通用设置 ---
                 const Padding(
                   padding: EdgeInsets.only(left: 32, bottom: 8, top: 16),
                   child: Align(
@@ -351,7 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 CupertinoListSection.insetGrouped(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+                  backgroundColor: Colors.transparent,
                   children: [
                     CupertinoListTile(
                       title: Text(
@@ -379,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
-                      subtitle: const Text("配置 Prowlarr & TMDB"),
+                      subtitle: Text("配置 Prowlarr & TMDB", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
                       leading: const Icon(
                         CupertinoIcons.search_circle_fill,
                         color: Colors.purple,
@@ -395,7 +393,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     CupertinoListTile(
                       title: Text("流量预警", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                      subtitle: const Text("使用流量时弹出提示"),
+                      subtitle: Text("使用流量时弹出提示", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
                       leading: const Icon(CupertinoIcons.antenna_radiowaves_left_right, color: Colors.green),
                       trailing: CupertinoSwitch(
                         value: _cellularWarn, 
@@ -404,7 +402,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     CupertinoListTile(
                       title: Text("意见反馈", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                      subtitle: const Text("提交建议或Bug"),
+                      subtitle: Text("提交建议或Bug", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
                       leading: const Icon(CupertinoIcons.chat_bubble_text_fill, color: kPrimaryColor),
                       trailing: const CupertinoListTileChevron(),
                       onTap: () {
@@ -417,23 +415,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                        },
                      ),
-                     
-                    // ... 隐私政策 ...
                     CupertinoListTile(
                       title: Text("隐私政策", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                      subtitle: const Text("我们如何处理数据"),
+                      subtitle: Text("我们如何处理数据", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
                       leading: const Icon(CupertinoIcons.lock_shield_fill, color: Colors.blue),
                       trailing: const CupertinoListTileChevron(),
                       onTap: () {
                         Navigator.push(context, CupertinoPageRoute(builder: (_) => const PrivacyPolicyScreen()));
                       },
                     ),
-
-                    // ✅ 新增：用户协议
                     CupertinoListTile(
                       title: Text("用户协议", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                      subtitle: const Text("免责声明与使用规范"),
-                      leading: const Icon(CupertinoIcons.doc_text_fill, color: Colors.orange), // 用个文档图标
+                      subtitle: Text("免责声明与使用规范", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
+                      leading: const Icon(CupertinoIcons.doc_text_fill, color: Colors.orange),
                       trailing: const CupertinoListTileChevron(),
                       onTap: () {
                         Navigator.push(
@@ -444,15 +438,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                       },
                     ),
-
-                     // ✅ 完美的独立栏目：支持作者
                      CupertinoListTile(
                       title: Text("支持作者", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-                      subtitle: const Text("请我喝杯咖啡"),
+                      subtitle: Text("请我喝杯咖啡", style: TextStyle(color: isDark ? Colors.white38 : Colors.grey)),
                       leading: const Icon(CupertinoIcons.heart_fill, color: Colors.red),
                       trailing: const CupertinoListTileChevron(),
                       onTap: () {
-                        // 跳转到新的打赏页面
                         Navigator.push(
                           context,
                           CupertinoPageRoute(
@@ -463,7 +454,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                      ),
                   ],
                 ),
-                
                 const SizedBox(height: 40),
               ],
             ),
