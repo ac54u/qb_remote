@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart'; // 1. 系统服务：剪贴板
+import 'package:flutter/services.dart';
 import '../../core/constants.dart';
 import '../../core/utils.dart';
 import '../../services/api_service.dart';
 import 'movie_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  final String? initialQuery; 
+  final String? initialQuery;
   final bool autoPaste;
 
   const SearchScreen({
-    super.key, 
-    this.initialQuery, 
-    this.autoPaste = true
+    super.key,
+    this.initialQuery,
+    this.autoPaste = true,
   });
 
   @override
@@ -28,7 +28,6 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    // 4. 页面初始化逻辑：处理传参或剪贴板
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
         _searchCtrl.text = widget.initialQuery!;
@@ -39,13 +38,19 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  // 5. 核心方法：读取剪贴板并自动搜索
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkClipboardAndSearch() async {
     ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     
     if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
       String content = data.text!.trim();
       
+      // 简单的长度过滤，避免搜索过长的无意义文本
       if (content.length > 50) return; 
 
       setState(() {
@@ -60,16 +65,19 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _doSearch() async {
     if (_searchCtrl.text.isEmpty) return;
     FocusScope.of(context).unfocus();
+    
     setState(() {
       _isLoading = true;
       _results = [];
     });
+    
     try {
       final prowlarrResults = await ApiService.searchProwlarr(_searchCtrl.text);
 
       final processed = prowlarrResults.map((item) {
         String raw = item['title'].toString().toUpperCase();
-        List<String> tags = []; 
+        List<String> tags = [];
+        
         if (raw.contains('4K') || raw.contains('2160P')) tags.add('4K');
         if (raw.contains('1080P')) tags.add('1080P');
         if (raw.contains('HDR')) tags.add('HDR');
@@ -78,7 +86,7 @@ class _SearchScreenState extends State<SearchScreen> {
         return {...item, 'tags': tags};
       }).toList();
 
-      // 排序：做种数从多到少
+      // 排序：做种数倒序
       processed.sort(
         (a, b) => (int.tryParse(b['seeders'].toString()) ?? 0).compareTo(int.tryParse(a['seeders'].toString()) ?? 0),
       );
@@ -93,75 +101,73 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isDark = themeNotifier.value; 
-    
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(
-          "资源搜索", 
-          style: TextStyle(color: isDark ? Colors.white : Colors.black)
-        ),
-        previousPageTitle: "返回",
-        // 适配导航栏背景
-        backgroundColor: isDark ? kBgColorDark : Colors.white.withOpacity(0.5),
-        border: null,
-      ),
-      backgroundColor: isDark ? kBgColorDark : kBgColorLight, // 使用全局动态背景
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: CupertinoSearchTextField(
-                controller: _searchCtrl,
-                placeholder: "搜索电影、剧集 (Prowlarr)",
-                placeholderStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
-                onSuffixTap: () {
-                   _searchCtrl.clear();
-                   setState(() => _results = []);
-                },
-                // ✅ 适配输入框背景：深色模式用深灰
-                backgroundColor: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                onSubmitted: (_) => _doSearch(),
-              ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: themeNotifier,
+      builder: (context, isDark, child) {
+        return CupertinoPageScaffold(
+          navigationBar: CupertinoNavigationBar(
+            middle: Text(
+              "资源搜索",
+              style: TextStyle(color: isDark ? Colors.white : Colors.black),
             ),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CupertinoActivityIndicator())
-                  : _results.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            CupertinoIcons.search,
-                            size: 64,
-                            // ✅ 占位图标颜色调整
-                            color: isDark ? Colors.white10 : Colors.grey[300],
+            backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+            border: null,
+            previousPageTitle: "返回",
+          ),
+          backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: CupertinoSearchTextField(
+                    controller: _searchCtrl,
+                    placeholder: "搜索电影、剧集 (Prowlarr)",
+                    onSuffixTap: () {
+                       _searchCtrl.clear();
+                       setState(() => _results = []);
+                    },
+                    backgroundColor: isDark ? Colors.grey[800] : Colors.white,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                    onSubmitted: (_) => _doSearch(),
+                  ),
+                ),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CupertinoActivityIndicator())
+                      : _results.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(
+                                CupertinoIcons.search,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                "输入关键词开始搜刮",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "输入关键词开始搜刮",
-                            style: TextStyle(color: isDark ? Colors.white24 : Colors.grey),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _results.length,
-                      itemBuilder: (context, index) =>
-                          _buildResultItem(_results[index]),
-                    ),
+                        )
+                      : ListView.builder(
+                          itemCount: _results.length,
+                          itemBuilder: (context, index) =>
+                              _buildResultItem(_results[index], isDark),
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildResultItem(dynamic item) {
-    bool isDark = themeNotifier.value;
+  Widget _buildResultItem(dynamic item, bool isDark) {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -171,10 +177,8 @@ class _SearchScreenState extends State<SearchScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          // ✅ 使用动态卡片色
           color: isDark ? kCardColorDark : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          // ✅ 深色模式去掉投影
           boxShadow: isDark ? [] : kMinimalShadow,
         ),
         child: Row(
@@ -190,14 +194,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      // ✅ 标题文字颜色
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
-                    runSpacing: 4, 
+                    runSpacing: 4,
                     children: (item['tags'] as List).map<Widget>((t) {
                       bool is4k = t == '4K';
                       return Container(
@@ -225,8 +228,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 8),
                   Text(
                     "${item['indexer'] ?? 'Unknown'} • ${Utils.formatBytes(item['size'] ?? 0)}",
-                    // ✅ 副标题文字颜色
-                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ),
@@ -240,12 +242,12 @@ class _SearchScreenState extends State<SearchScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF34C759), // 绿色数字保持
+                    color: Color(0xFF34C759),
                   ),
                 ),
-                Text(
+                const Text(
                   "做种",
-                  style: TextStyle(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey),
+                  style: TextStyle(fontSize: 10, color: Colors.grey),
                 ),
               ],
             ),

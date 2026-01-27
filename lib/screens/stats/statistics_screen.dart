@@ -52,7 +52,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       setState(() {
         _serverData = data;
         final serverState = data['server_state'] ?? {};
-        // 这里保留你原始的除以 1024 逻辑
         final double dlSpeed = (serverState['dl_info_speed'] ?? 0) / 1024.0;
         final double upSpeed = (serverState['up_info_speed'] ?? 0) / 1024.0;
 
@@ -78,7 +77,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  // 完全保留你原始的成就计算逻辑
   List<Map<String, dynamic>> _calculateMilestones(Map<String, dynamic> data) {
     final serverState = data['server_state'] ?? {};
     final totalDl = serverState['alltime_dl'] ?? 0; 
@@ -118,9 +116,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     ];
   }
 
-  Widget _buildMilestoneList() {
+  // 修改点：传入 isDark 参数
+  Widget _buildMilestoneList(bool isDark) {
     final milestones = _calculateMilestones(_serverData);
-    bool isDark = themeNotifier.value; // 使用你的 themeNotifier
 
     return SizedBox(
       height: 110,
@@ -136,7 +134,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              // 适配深色背景
               color: achieved 
                   ? (m['color'] as Color).withOpacity(0.1) 
                   : (isDark ? Colors.white10 : Colors.grey[200]),
@@ -191,108 +188,112 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ? ratioRaw.toStringAsFixed(2)
         : (ratioRaw ?? "0.00");
 
-    bool isDark = themeNotifier.value;
-
-    return CupertinoPageScaffold(
-      backgroundColor: kBgColor, // 动态背景
-      navigationBar: CupertinoNavigationBar(
-        middle: Text("统计", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-        backgroundColor: kBgColor,
-        border: null,
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _showLimitSheet,
-          child: const Icon(CupertinoIcons.thermometer, size: 24),
-        ),
-      ),
-      child: CustomScrollView(
-        slivers: [
-          CupertinoSliverRefreshControl(
-            onRefresh: () async {
-              await _fetch();
-              return Future.delayed(const Duration(milliseconds: 500));
-            },
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 0, 10),
-                  child: Text(
-                    "成就里程碑", 
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold, 
-                      fontSize: 20,
-                      color: isDark ? Colors.white : Colors.black,
-                    )
-                  ),
-                ),
-                _buildMilestoneList(),
-                const SizedBox(height: 20),
-
-                _buildInfoCard(
-                  isDark: isDark,
-                  title: "服务器",
-                  rows: [
-                    _buildInfoRow("qBittorrent 版本", _appVersion, isDark, bold: true),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildInfoCard(
-                  isDark: isDark,
-                  title: "历史统计",
-                  rows: [
-                    _buildIconRow(CupertinoIcons.tray_arrow_down_fill, kPrimaryColor, "总下载量", totalDl, isDark),
-                    _buildIconRow(CupertinoIcons.tray_arrow_up_fill, const Color(0xFF34C759), "总上传量", totalUp, isDark),
-                    _buildIconRow(CupertinoIcons.graph_circle_fill, const Color(0xFFFF9500), "分享率", ratio.toString(), isDark),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16, bottom: 8),
-                  child: Text(
-                    "当前会话",
-                    style: TextStyle(
-                      color: isDark ? Colors.white54 : Colors.grey,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                _buildChartCard(
-                  isDark: isDark,
-                  title: "下载",
-                  sessionLabel: "本次下载",
-                  sessionValue: dlSession,
-                  speedLabel: "下载速率",
-                  speedValue: dlSpeedStr,
-                  color: kPrimaryColor,
-                  spots: _dlSpots,
-                ),
-                const SizedBox(height: 12),
-                _buildChartCard(
-                  isDark: isDark,
-                  title: "上传",
-                  sessionLabel: "本次上传",
-                  sessionValue: upSession,
-                  speedLabel: "上传速率",
-                  speedValue: upSpeedStr,
-                  color: const Color(0xFF34C759),
-                  spots: _upSpots,
-                ),
-                const SizedBox(height: 16),
-                _buildInfoCard(
-                  isDark: isDark,
-                  title: "硬盘",
-                  rows: [_buildInfoRow("剩余空间", freeSpace, isDark, bold: true)],
-                ),
-                const SizedBox(height: 120),
-              ]),
+    // 修改点：使用 ValueListenableBuilder 包裹 Scaffold
+    return ValueListenableBuilder<bool>(
+      valueListenable: themeNotifier,
+      builder: (context, isDark, child) {
+        return CupertinoPageScaffold(
+          backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+          navigationBar: CupertinoNavigationBar(
+            middle: Text("统计", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+            backgroundColor: isDark ? kBgColorDark : kBgColorLight,
+            border: null,
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _showLimitSheet,
+              child: const Icon(CupertinoIcons.thermometer, size: 24),
             ),
           ),
-        ],
-      ),
+          child: CustomScrollView(
+            slivers: [
+              CupertinoSliverRefreshControl(
+                onRefresh: () async {
+                  await _fetch();
+                  return Future.delayed(const Duration(milliseconds: 500));
+                },
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 0, 10),
+                      child: Text(
+                        "成就里程碑", 
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 20,
+                          color: isDark ? Colors.white : Colors.black,
+                        )
+                      ),
+                    ),
+                    _buildMilestoneList(isDark), // 传入 isDark
+                    const SizedBox(height: 20),
+
+                    _buildInfoCard(
+                      isDark: isDark,
+                      title: "服务器",
+                      rows: [
+                        _buildInfoRow("qBittorrent 版本", _appVersion, isDark, bold: true),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoCard(
+                      isDark: isDark,
+                      title: "历史统计",
+                      rows: [
+                        _buildIconRow(CupertinoIcons.tray_arrow_down_fill, kPrimaryColor, "总下载量", totalDl, isDark),
+                        _buildIconRow(CupertinoIcons.tray_arrow_up_fill, const Color(0xFF34C759), "总上传量", totalUp, isDark),
+                        _buildIconRow(CupertinoIcons.graph_circle_fill, const Color(0xFFFF9500), "分享率", ratio.toString(), isDark),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, bottom: 8),
+                      child: Text(
+                        "当前会话",
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : Colors.grey,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    _buildChartCard(
+                      isDark: isDark,
+                      title: "下载",
+                      sessionLabel: "本次下载",
+                      sessionValue: dlSession,
+                      speedLabel: "下载速率",
+                      speedValue: dlSpeedStr,
+                      color: kPrimaryColor,
+                      spots: _dlSpots,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildChartCard(
+                      isDark: isDark,
+                      title: "上传",
+                      sessionLabel: "本次上传",
+                      sessionValue: upSession,
+                      speedLabel: "上传速率",
+                      speedValue: upSpeedStr,
+                      color: const Color(0xFF34C759),
+                      spots: _upSpots,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoCard(
+                      isDark: isDark,
+                      title: "硬盘",
+                      rows: [_buildInfoRow("剩余空间", freeSpace, isDark, bold: true)],
+                    ),
+                    const SizedBox(height: 120),
+                  ]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -328,7 +329,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor, // 关键：使用动态卡片色
+        color: isDark ? kCardColorDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: isDark ? [] : kMinimalShadow,
       ),
@@ -411,7 +412,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: kCardColor, // 关键：使用动态卡片色
+        color: isDark ? kCardColorDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: isDark ? [] : kMinimalShadow,
       ),
