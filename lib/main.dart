@@ -5,18 +5,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
-// ✅ 新增：引入通知包
-import 'package:flutter_localizations/flutter_localizations.dart'; 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// ✅ 新增：引入 QuickActions 包
+import 'package:quick_actions/quick_actions.dart'; 
 
 import 'core/constants.dart';
 import 'services/server_manager.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/main_tab_scaffold.dart';
+// ✅ 新增：确保引入你的搜索页 (请检查路径是否正确)
+import 'screens/search/search_screen.dart'; 
 
-// ✅ 新增：全局通知插件实例 (方便在其他文件直接调用)
+// ✅ 全局通知插件实例
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+// ✅ 新增：全局导航 Key (用于在没有 Context 的地方跳转页面)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +31,6 @@ Future<void> main() async {
   themeNotifier.value = prefs.getBool('is_dark_mode') ?? false;
   final hasServers = await ServerManager.hasServers();
 
-  // ✅ 新增：初始化本地通知
   await _initNotifications();
 
   await SentryFlutter.init(
@@ -39,13 +43,10 @@ Future<void> main() async {
   );
 }
 
-// ✅ 新增：通知初始化逻辑分离
 Future<void> _initNotifications() async {
-  // Android 设置：使用默认的应用图标 (通常是 @mipmap/ic_launcher)
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  // iOS 设置：启动时直接请求权限 (角标、声音、弹窗)
   const DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
     requestAlertPermission: true,
@@ -60,13 +61,55 @@ Future<void> _initNotifications() async {
 
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    // 如果需要处理点击通知后的跳转，可以在这里加 onDidReceiveNotificationResponse
   );
 }
 
-class MyApp extends StatelessWidget {
+// ⚠️ 修改：将 MyApp 改为 Stateful Widget 以便初始化 QuickActions
+class MyApp extends StatefulWidget {
   final bool startOnboarding;
   const MyApp({super.key, required this.startOnboarding});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // ✅ 1. 定义 QuickActions 实例
+  final QuickActions quickActions = const QuickActions();
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ 2. 初始化 QuickActions
+    _setupQuickActions();
+  }
+
+  void _setupQuickActions() {
+    quickActions.initialize((String shortcutType) {
+      // ✅ 3. 处理回调：当用户点击了快捷菜单
+      if (shortcutType == 'action_search') {
+        print('⚡️ 检测到长按快捷操作：进入搜索');
+        
+        // 使用全局 navigatorKey 进行跳转，因为这里可能没有 context
+        navigatorKey.currentState?.push(
+          CupertinoPageRoute(
+            builder: (context) => const SearchScreen(
+              autoPaste: true, // 👈 开启自动粘贴功能
+            ),
+          ),
+        );
+      }
+    });
+
+    // ✅ 4. 设置菜单项 (记得图片资源要放对位置)
+    quickActions.setShortcutItems(<ShortcutItem>[
+      const ShortcutItem(
+        type: 'action_search',    // 唯一ID
+        localizedTitle: '一键搜索', // 标题
+        icon: 'ic_search',        // 原生图片名 (iOS: Assets.xcassets / Android: drawable)
+      ),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +117,8 @@ class MyApp extends StatelessWidget {
       valueListenable: themeNotifier,
       builder: (context, isDark, child) {
         return CupertinoApp(
+          // ✅ 5. 绑定全局 NavigatorKey
+          navigatorKey: navigatorKey, 
           title: 'Orbix',
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
@@ -108,7 +153,8 @@ class MyApp extends StatelessWidget {
               ),
             ),
           ),
-          home: startOnboarding
+          // 注意：widget.startOnboarding (因为变成了 State 类)
+          home: widget.startOnboarding
               ? const OnboardingScreen()
               : const MainTabScaffold(),
         );
