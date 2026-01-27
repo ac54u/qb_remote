@@ -65,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       _refreshInterval = prefs.getInt('refresh_rate') ?? 3;
       
-      String path = prefs.getString('default_path') ?? "/downloads/Movies";
+      String path = prefs.getString('default_path') ?? "/data/Movies";
       _pathCtrl.text = path;
 
       _cellularWarn = prefs.getBool('cellular_warn') ?? true;
